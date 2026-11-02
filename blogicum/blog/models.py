@@ -5,6 +5,13 @@ User = get_user_model()
 
 
 class BaseModel(models.Model):
+    """
+    Абстрактная модель с общими полями для всех сущностей блога.
+
+    Содержит флаг публикации и дату создания, чтобы избежать
+    дублирования кода в моделях Category, Location и Post.
+    """
+
     is_published = models.BooleanField(
         default=True,
         verbose_name='Опубликовано',
@@ -20,6 +27,12 @@ class BaseModel(models.Model):
 
 
 class Category(BaseModel):
+    """
+    Тематическая категория для группировки публикаций.
+
+    Пользователь не может создать пост без указания категории.
+    """
+
     title = models.CharField(max_length=256, verbose_name='Заголовок')
     description = models.TextField(verbose_name='Описание')
     slug = models.SlugField(
@@ -40,6 +53,12 @@ class Category(BaseModel):
 
 
 class Location(BaseModel):
+    """
+    Географическая метка (местоположение), к которой относится пост.
+
+    Может быть не указана (необязательное поле в Post).
+    """
+
     name = models.CharField(max_length=256, verbose_name='Название места')
 
     class Meta:
@@ -51,7 +70,15 @@ class Location(BaseModel):
 
 
 class Post(BaseModel):
-    image = models.ImageField(upload_to='posts_images', blank=True, verbose_name='Изображение')
+    """
+    Публикация (пост) в блоге.
+
+    Основная сущность проекта. Может быть отложенной (pub_date в будущем)
+    или снятой с публикации (is_published=False).
+    """
+
+    image = models.ImageField(upload_to='posts_images', blank=True,
+                              verbose_name='Изображение')
     title = models.CharField(max_length=256, verbose_name='Заголовок')
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField(
@@ -91,9 +118,20 @@ class Post(BaseModel):
     def __str__(self):
         return self.title
 
+
 class Comment(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    """
+    Комментарий к публикации.
+
+    Может быть оставлен только авторизованным пользователем.
+    Удаляется каскадно вместе с постом.
+    """
+
+    post = models.ForeignKey(Post,
+                             on_delete=models.CASCADE,
+                             related_name='comments')
+    author = models.ForeignKey(User,
+                               on_delete=models.CASCADE)
     text = models.TextField(verbose_name='Текст комментария')
     created_at = models.DateTimeField(auto_now_add=True)
 
